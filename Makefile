@@ -2,7 +2,7 @@
 TARGET_DIR = $(HOME)/tools
 
 # Binary names
-BINARIES = cls
+BINARIES = cls mtof ftom
 
 .PHONY: all build install clean
 
