@@ -6,7 +6,6 @@ mod envelope;
 mod oscillator;
 mod tone;
 use envelope::Envelope;
-use oscillator::WaveformType;
 use tone::{ToneError, ToneParams};
 
 // Command line interface for the tone generator
@@ -99,15 +98,18 @@ fn generate_audio(params: &ToneParams) -> Vec<f32> {
     let sample_rate = 48000.0;
     let duration = params.dur;
     let num_samples = (duration * sample_rate) as usize;
-    let waveform = WaveformType::from_str(&params.waveform).expect("Invalid waveform type");
+    // オシレータのインスタンスを作成
+    let mut oscillator = oscillator::Oscillator::from_str(&params.waveform, sample_rate)
+        .expect("Invalid waveform type");
+    oscillator.set_frequency(params.freq);
+    // ADSR for amplitude
     let envelope = Envelope::new(params);
 
     let mut samples = Vec::with_capacity(num_samples * 2);
 
     for i in 0..num_samples {
         let time = i as f32 / sample_rate;
-        let phase = (time * params.freq).fract();
-        let raw_sample = waveform.generate(phase);
+        let raw_sample = oscillator.generate();
         let amplitude = envelope.get_amplitude(time, duration);
         let sample = raw_sample * amplitude;
 
