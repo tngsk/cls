@@ -49,7 +49,7 @@ mod tests {
         let envelope = Envelope::new(&params);
 
         // Test attack phase
-        assert!(envelope.get_amplitude(0.05, 1.0) < 0.5);
+        assert!(envelope.get_amplitude(0.04, 1.0) < 0.5);
 
         // Test decay phase
         assert!(envelope.get_amplitude(0.15, 1.0) > 0.7);

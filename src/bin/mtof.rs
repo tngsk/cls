@@ -34,7 +34,15 @@ impl FromStr for Note {
             return Err(NoteParseError);
         }
 
-        let (note_part, octave_str) = s.split_at(s.len() - 1);
+        let split_idx = s
+            .find(|c: char| c.is_ascii_digit() || c == '-' || c == '+')
+            .ok_or(NoteParseError)?;
+
+        if split_idx == 0 {
+            return Err(NoteParseError);
+        }
+
+        let (note_part, octave_str) = s.split_at(split_idx);
         let octave = octave_str.parse::<i32>().map_err(|_| NoteParseError)?;
 
         let (base_note, semitones) = match note_part.to_uppercase().as_str() {
@@ -54,7 +62,7 @@ impl FromStr for Note {
         };
 
         let midi_note = (octave + 1) * 12 + base_note + semitones;
-        if midi_note >= 0 && midi_note <= 127 {
+        if (0..=127).contains(&midi_note) {
             Ok(Note(midi_note as u8))
         } else {
             Err(NoteParseError)
