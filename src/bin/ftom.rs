@@ -42,14 +42,16 @@ fn get_note_name(midi_note: u8) -> String {
 fn main() {
     let args = Args::parse();
     let midi_float = freq_to_midi(args.frequency);
-    let midi_note = midi_float.round() as u8;
+    let rounded = midi_float.round();
 
-    if midi_note > 127 {
-        eprintln!("Error: Frequency too high for MIDI range");
+    if !(0.0..=127.0).contains(&rounded) {
+        eprintln!("Error: Frequency out of range for MIDI");
         std::process::exit(1);
     }
 
-    let cents = (midi_float - midi_float.round()) * 100.0;
+    let midi_note = rounded as u8;
+
+    let cents = (midi_float - rounded) * 100.0;
     let note_name = get_note_name(midi_note);
 
     println!("Frequency: {:.2} Hz", args.frequency);

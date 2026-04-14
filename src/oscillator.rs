@@ -132,9 +132,7 @@ impl Oscillator {
     }
 
     pub fn set_frequency(&mut self, frequency: f32) {
-        self.phase_increment = ((frequency as f64 * PHASE_SCALE / self.sample_rate as f64) as u32)
-            .max(0)
-            .min(u32::MAX);
+        self.phase_increment = (frequency as f64 * PHASE_SCALE / self.sample_rate as f64) as u32;
     }
 
     pub fn generate(&mut self) -> f32 {
