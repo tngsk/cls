@@ -131,12 +131,20 @@ pub enum WavWriteError {
     WriterError(#[from] hound::Error),
 }
 
-pub fn write_wav(
-    samples: &[f32],
+pub fn generate_and_write_wav(
+    params: &ToneParams,
     path: &PathBuf,
     sample_rate: u32,
     bits_per_sample: u16,
 ) -> Result<(), WavWriteError> {
+    let duration = params.dur;
+    let num_samples = (duration * sample_rate as f32) as usize;
+
+    let mut oscillator = oscillator::Oscillator::from_str(&params.waveform, sample_rate as f32)
+        .expect("Invalid waveform type");
+    oscillator.set_frequency(params.freq);
+    let envelope = Envelope::new(params);
+
     match bits_per_sample {
         32 => {
             let spec = hound::WavSpec {
@@ -146,8 +154,14 @@ pub fn write_wav(
                 sample_format: hound::SampleFormat::Float,
             };
             let mut writer = hound::WavWriter::create(path, spec)?;
-            for &sample in samples {
+            for i in 0..num_samples {
+                let time = i as f32 / sample_rate as f32;
+                let raw_sample = oscillator.generate();
+                let amplitude = envelope.get_amplitude(time, duration);
+                let sample = raw_sample * amplitude;
+
                 writer.write_sample(sample)?;
+                writer.write_sample(sample)?; // duplicate for stereo
             }
             writer.finalize()?;
         }
@@ -159,9 +173,15 @@ pub fn write_wav(
                 sample_format: hound::SampleFormat::Int,
             };
             let mut writer = hound::WavWriter::create(path, spec)?;
-            for &sample in samples {
+            for i in 0..num_samples {
+                let time = i as f32 / sample_rate as f32;
+                let raw_sample = oscillator.generate();
+                let amplitude = envelope.get_amplitude(time, duration);
+                let sample = raw_sample * amplitude;
+
                 let int_sample = (sample * 8388607.0) as i32;
                 writer.write_sample(int_sample)?;
+                writer.write_sample(int_sample)?; // duplicate for stereo
             }
             writer.finalize()?;
         }
