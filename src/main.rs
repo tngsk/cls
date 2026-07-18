@@ -94,13 +94,12 @@ fn parse_params(params: &str) -> Result<ToneParams, ToneError> {
 }
 
 // Generate audio samples based on parameters
-fn generate_audio(params: &ToneParams) -> Vec<f32> {
-    let sample_rate = 48000.0;
+fn generate_audio(params: &ToneParams, sample_rate: u32) -> Result<Vec<f32>, ToneError> {
+    let sample_rate_f32 = sample_rate as f32;
     let duration = params.dur;
-    let num_samples = (duration * sample_rate) as usize;
+    let num_samples = (duration * sample_rate_f32) as usize;
     // オシレータのインスタンスを作成
-    let mut oscillator = oscillator::Oscillator::from_str(&params.waveform, sample_rate)
-        .expect("Invalid waveform type");
+    let mut oscillator = oscillator::Oscillator::from_str(&params.waveform, sample_rate_f32)?;
     oscillator.set_frequency(params.freq);
     // ADSR for amplitude
     let envelope = Envelope::new(params);
@@ -108,7 +107,7 @@ fn generate_audio(params: &ToneParams) -> Vec<f32> {
     let mut samples = Vec::with_capacity(num_samples * 2);
 
     for i in 0..num_samples {
-        let time = i as f32 / sample_rate;
+        let time = i as f32 / sample_rate_f32;
         let raw_sample = oscillator.generate();
         let amplitude = envelope.get_amplitude(time, duration);
         let sample = raw_sample * amplitude;
@@ -118,7 +117,7 @@ fn generate_audio(params: &ToneParams) -> Vec<f32> {
         samples.push(sample);
     }
 
-    samples
+    Ok(samples)
 }
 
 // Write audio samples to WAV file
@@ -183,7 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     params.validate()?;
 
-    let samples = generate_audio(&params);
+    let samples = generate_audio(&params, cli.sample_rate)?;
     write_wav(&samples, &cli.output, cli.sample_rate, cli.bits_per_sample)?;
 
     Ok(())
